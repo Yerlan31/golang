@@ -27,5 +27,26 @@ func CombineResults(in, out chan interface{}){
 
 func main(){
 	fmt.Println("Hello!")
-	// сюда писать код
+	inputData := []int{0, 1, 1, 2, 3, 5, 8}
+
+	hashSignJobs := []job{
+		job(func(in, out chan interface{}) {
+			for _, fibNum := range inputData {
+				out <- fibNum
+			}
+		}),
+		job(SingleHash),
+		job(MultiHash),
+		job(CombineResults),
+		job(func(in, out chan interface{}) {
+			dataRaw := <-in
+			data, ok := dataRaw.(string)
+			if !ok {
+				fmt.Println("cant convert result data to string")
+			}
+			fmt.Println(data)
+		}),
+	}
+
+	ExecutePipeline(hashSignJobs...)
 }
