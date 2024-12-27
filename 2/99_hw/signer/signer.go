@@ -38,9 +38,10 @@ func SingleHash(in, out chan interface{}){
 
 func MultiHash(in, out chan interface{}){
 	str := <-in
-	for i := 0; i<
-	resultSH := DataSignerCrc32(fmt.Sprint(str))
-	fmt.Printf("%v MultiHash crc32(th+step1) %v\n", str, resultSH)
+	for i := 0; i< 6; i++{
+		resultSH := DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
+		fmt.Printf("%v MultiHash crc32(th+step1) %v\n", str, i, resultSH)
+	}
 	out <- str
 }
 
