@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+
 func ExecutePipeline(jobsArray ... job){
 	fmt.Println("ExecutePipeline!")
 	in := make(chan interface{}, 1)
@@ -14,6 +15,7 @@ func ExecutePipeline(jobsArray ... job){
 		in = out
 	}
 }
+
 
 func SingleHash(in, out chan interface{}){
 	str := <-in
@@ -36,6 +38,7 @@ func SingleHash(in, out chan interface{}){
 	out <- final
 }
 
+
 func MultiHash(in, out chan interface{}){
 	str := <-in
 	for i := 0; i< 6; i++{
@@ -45,9 +48,13 @@ func MultiHash(in, out chan interface{}){
 	out <- str
 }
 
+
 func CombineResults(in, out chan interface{}){
+	<-in
 	fmt.Println("CombineResults!")
+	out <- 3
 }
+
 
 func main(){
 	inputData := []int{0, 1}
