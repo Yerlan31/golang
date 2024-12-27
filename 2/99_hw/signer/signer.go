@@ -6,19 +6,42 @@ import (
 
 func ExecutePipeline(jobsArray ... job){
 	fmt.Println("ExecutePipeline!")
-	in := make(chan interface{})
-    out := make(chan interface{})
+	in := make(chan interface{}, 1)
 	for _ , oneJob := range jobsArray {
+		// go oneJob(in,out)
+		out := make(chan interface{}, 1)
 		go oneJob(in,out)
+		in = out
 	}
 }
 
 func SingleHash(in, out chan interface{}){
-	fmt.Println("SingleHash!")
+	str := <-in
+	fmt.Printf("%v SingleHash data %v\n", str, str)
+
+	resultSH := DataSignerMd5(fmt.Sprint(str))
+	fmt.Printf("%v SingleHash md5(data) %v\n", str, resultSH)
+
+	resultSH = DataSignerCrc32(fmt.Sprint(resultSH))
+	fmt.Printf("%v SingleHash crc32(md5(data)) %v\n", str, resultSH)
+	
+	final := resultSH
+
+	resultSH = DataSignerCrc32(fmt.Sprint(str))
+	fmt.Printf("%v SingleHash crc32(data) %v\n", str, resultSH)
+	final = resultSH + "~" + final
+
+	fmt.Printf("%v SingleHash result %v\n", str, final)
+
+	out <- final
 }
 
 func MultiHash(in, out chan interface{}){
-	fmt.Println("MultiHash!")
+	str := <-in
+	for i := 0; i<
+	resultSH := DataSignerCrc32(fmt.Sprint(str))
+	fmt.Printf("%v MultiHash crc32(th+step1) %v\n", str, resultSH)
+	out <- str
 }
 
 func CombineResults(in, out chan interface{}){
@@ -26,12 +49,12 @@ func CombineResults(in, out chan interface{}){
 }
 
 func main(){
-	fmt.Println("Hello!")
-	inputData := []int{0, 1, 1, 2, 3, 5, 8}
+	inputData := []int{0, 1}
 
 	hashSignJobs := []job{
 		job(func(in, out chan interface{}) {
 			for _, fibNum := range inputData {
+				fmt.Println("Первая функция")
 				out <- fibNum
 			}
 		}),
@@ -49,4 +72,6 @@ func main(){
 	}
 
 	ExecutePipeline(hashSignJobs...)
+
+	fmt.Scanln()
 }
