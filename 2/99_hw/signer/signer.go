@@ -55,6 +55,7 @@ func SingleHash(in, out chan interface{}){
 
 
 func MultiHash(in, out chan interface{}){
+	var resultArray [6]string
 	for str := range in {
 		for i := 0; i< 6; i++{
 			go func() {
@@ -62,7 +63,7 @@ func MultiHash(in, out chan interface{}){
 				fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultSH)
 			}()
 		}
-		fmt.Printf("Закончили \n")
+		fmt.Println(resultArray)
 		out <- str
 	}
 }
@@ -71,7 +72,6 @@ func MultiHash(in, out chan interface{}){
 func CombineResults(in, out chan interface{}){
 	var results []string
 
-    // Считываем все данные из входного канала
     for result := range in {
         results = append(results, fmt.Sprintf("%v", result))
     }
@@ -104,6 +104,5 @@ func main(){
 			fmt.Println("Вот и все" + data)
 		}),
 	}
-
 	ExecutePipeline(hashSignJobs...)
 }
