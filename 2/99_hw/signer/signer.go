@@ -3,56 +3,68 @@ package main
 import (
 	"fmt";
 	"sort";
-	"strings"
+	"strings";
+	"sync"
 )
 
 
 func ExecutePipeline(jobsArray ... job){
-	fmt.Println("ExecutePipeline!")
-	in := make(chan interface{}, 1)
+	var wg sync.WaitGroup
+	in := make(chan interface{})
 	for _ , oneJob := range jobsArray {
-		// go oneJob(in,out)
-		out := make(chan interface{}, 1)
-		go oneJob(in,out)
+		wg.Add(1)
+		out := make(chan interface{})
+		go func(j job, in, out chan interface{}) {
+			defer wg.Done()
+			defer close(out)
+			j(in, out)
+		}(oneJob, in, out)
+		
 		in = out
 	}
+	wg.Wait() 
 }
 
 
 func SingleHash(in, out chan interface{}){
 	for str := range in {
+		crc32Chan := make(chan string)
+        go func() {
+            crc32Chan <- DataSignerCrc32(fmt.Sprint(str))
+        }()
+		
 		fmt.Printf("%v SingleHash data %v\n", str, str)
-
+		
 		resultSH := DataSignerMd5(fmt.Sprint(str))
 		fmt.Printf("%v SingleHash md5(data) %v\n", str, resultSH)
-
+		
 		resultSH = DataSignerCrc32(fmt.Sprint(resultSH))
 		fmt.Printf("%v SingleHash crc32(md5(data)) %v\n", str, resultSH)
 		
 		final := resultSH
-
-		resultSH = DataSignerCrc32(fmt.Sprint(str))
-		fmt.Printf("%v SingleHash crc32(data) %v\n", str, resultSH)
-		final = resultSH + "~" + final
+		
+        crc32 := <-crc32Chan
+		fmt.Printf("%v SingleHash crc32(data) %v\n", str, crc32)
+		final = crc32 + "~" + final
 
 		fmt.Printf("%v SingleHash result %v\n", str, final)
 		
 		out <- final
 	}
-	close(out)
 }
 
 
 func MultiHash(in, out chan interface{}){
 	for str := range in {
 		for i := 0; i< 6; i++{
-			resultSH := DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
-			fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultSH)
+			go func() {
+				resultSH := DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
+				fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultSH)
+			}()
 		}
 		fmt.Printf("Закончили \n")
 		out <- str
 	}
-	close(out)
 }
 
 
@@ -94,6 +106,4 @@ func main(){
 	}
 
 	ExecutePipeline(hashSignJobs...)
-
-	fmt.Scanln()
 }
