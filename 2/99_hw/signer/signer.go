@@ -1,7 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"fmt";
+	"sort";
+	"strings"
 )
 
 
@@ -18,41 +20,54 @@ func ExecutePipeline(jobsArray ... job){
 
 
 func SingleHash(in, out chan interface{}){
-	str := <-in
-	fmt.Printf("%v SingleHash data %v\n", str, str)
+	for str := range in {
+		fmt.Printf("%v SingleHash data %v\n", str, str)
 
-	resultSH := DataSignerMd5(fmt.Sprint(str))
-	fmt.Printf("%v SingleHash md5(data) %v\n", str, resultSH)
+		resultSH := DataSignerMd5(fmt.Sprint(str))
+		fmt.Printf("%v SingleHash md5(data) %v\n", str, resultSH)
 
-	resultSH = DataSignerCrc32(fmt.Sprint(resultSH))
-	fmt.Printf("%v SingleHash crc32(md5(data)) %v\n", str, resultSH)
-	
-	final := resultSH
+		resultSH = DataSignerCrc32(fmt.Sprint(resultSH))
+		fmt.Printf("%v SingleHash crc32(md5(data)) %v\n", str, resultSH)
+		
+		final := resultSH
 
-	resultSH = DataSignerCrc32(fmt.Sprint(str))
-	fmt.Printf("%v SingleHash crc32(data) %v\n", str, resultSH)
-	final = resultSH + "~" + final
+		resultSH = DataSignerCrc32(fmt.Sprint(str))
+		fmt.Printf("%v SingleHash crc32(data) %v\n", str, resultSH)
+		final = resultSH + "~" + final
 
-	fmt.Printf("%v SingleHash result %v\n", str, final)
-
-	out <- final
+		fmt.Printf("%v SingleHash result %v\n", str, final)
+		
+		out <- final
+	}
+	close(out)
 }
 
 
 func MultiHash(in, out chan interface{}){
-	str := <-in
-	for i := 0; i< 6; i++{
-		resultSH := DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
-		fmt.Printf("%v MultiHash crc32(th+step1) %v\n", str, i, resultSH)
+	for str := range in {
+		for i := 0; i< 6; i++{
+			resultSH := DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
+			fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultSH)
+		}
+		fmt.Printf("Закончили \n")
+		out <- str
 	}
-	out <- str
+	close(out)
 }
 
 
 func CombineResults(in, out chan interface{}){
-	<-in
-	fmt.Println("CombineResults!")
-	out <- 3
+	var results []string
+
+    // Считываем все данные из входного канала
+    for result := range in {
+        results = append(results, fmt.Sprintf("%v", result))
+    }
+
+    sort.Strings(results)
+    combined := strings.Join(results, "_")
+
+    out <- combined
 }
 
 
@@ -62,7 +77,6 @@ func main(){
 	hashSignJobs := []job{
 		job(func(in, out chan interface{}) {
 			for _, fibNum := range inputData {
-				fmt.Println("Первая функция")
 				out <- fibNum
 			}
 		}),
@@ -75,7 +89,7 @@ func main(){
 			if !ok {
 				fmt.Println("cant convert result data to string")
 			}
-			fmt.Println(data)
+			fmt.Println("Вот и все" + data)
 		}),
 	}
 
