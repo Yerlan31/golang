@@ -63,11 +63,11 @@ func MultiHash(in, out chan interface{}){
 		var secondWg sync.WaitGroup
 		for i := 0; i< 6; i++{
 			secondWg.Add(1)
-			go func() {
+			go func(i int) {
 				defer secondWg.Done()
 				resultArray[i] = DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
 				fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultArray[i])
-			}()
+			}(i)
 		}
 		secondWg.Wait()
 		wg.Done()
