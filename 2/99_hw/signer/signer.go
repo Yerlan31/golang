@@ -56,9 +56,7 @@ func SingleHash(in, out chan interface{}){
 
 func MultiHash(in, out chan interface{}){
 	var resultArray [6]string
-	var wg sync.WaitGroup
 	for str := range in {
-		wg.Add(1)
 		fmt.Println(str)
 		var secondWg sync.WaitGroup
 		for i := 0; i< 6; i++{
@@ -70,10 +68,8 @@ func MultiHash(in, out chan interface{}){
 			}(i)
 		}
 		secondWg.Wait()
-		wg.Done()
 		out <- strings.Join(resultArray[:], "")
 	}
-	wg.Wait()
 }
 
 
