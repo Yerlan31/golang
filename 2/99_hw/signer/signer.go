@@ -56,16 +56,24 @@ func SingleHash(in, out chan interface{}){
 
 func MultiHash(in, out chan interface{}){
 	var resultArray [6]string
+	var wg sync.WaitGroup
 	for str := range in {
+		wg.Add(1)
+		fmt.Println(str)
+		var secondWg sync.WaitGroup
 		for i := 0; i< 6; i++{
+			secondWg.Add(1)
 			go func() {
-				resultSH := DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
-				fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultSH)
+				defer secondWg.Done()
+				resultArray[i] = DataSignerCrc32(fmt.Sprint(i) + fmt.Sprint(str))
+				fmt.Printf("%v MultiHash crc32(th+step1) %v %v\n", fmt.Sprint(str), i, resultArray[i])
 			}()
 		}
-		fmt.Println(resultArray)
-		out <- str
+		secondWg.Wait()
+		wg.Done()
+		out <- strings.Join(resultArray[:], "")
 	}
+	wg.Wait()
 }
 
 
@@ -101,7 +109,7 @@ func main(){
 			if !ok {
 				fmt.Println("cant convert result data to string")
 			}
-			fmt.Println("Вот и все" + data)
+			fmt.Println(data)
 		}),
 	}
 	ExecutePipeline(hashSignJobs...)
